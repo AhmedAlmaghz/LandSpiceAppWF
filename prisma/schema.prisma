@@ -23,6 +23,7 @@ model Role {
 
   // العلاقات
   users User[]
+  processSteps ProcessStep[]
 
   @@map("roles")
 }
@@ -56,6 +57,10 @@ model User {
   marketedRestaurants Restaurant[]     @relation("MarketerRestaurants")
   workflowLogs   WorkflowLog[]
   
+  @@index([username])
+  @@index([email])
+  @@index([status])
+  @@index([roleId])
   @@map("users")
 }
 
@@ -105,6 +110,10 @@ model Restaurant {
   printOrderDetails PrintOrderDetail[]
   workflowInstances WorkflowInstance[]
 
+  @@index([status])
+  @@index([marketerId])
+  @@index([name])
+  @@index([city])
   @@map("restaurants")
 }
 
@@ -196,6 +205,10 @@ model Contract {
   guarantees    Guarantee[]
   installments  Installment[]
 
+  @@index([status])
+  @@index([restaurantId])
+  @@index([startDate, endDate])
+  @@index([bankId])
   @@map("contracts")
 }
 
@@ -426,6 +439,10 @@ model Invoice {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   payments     Payment[]
 
+  @@index([status])
+  @@index([restaurantId])
+  @@index([dueDate])
+  @@index([periodFrom, periodTo])
   @@map("invoices")
 }
 
@@ -479,13 +496,16 @@ model Installment {
   // العلاقات
   contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
+  @@index([status])
+  @@index([dueDate])
+  @@index([contractId])
   @@map("installments")
 }
 
 // ========= إدارة سير العمل =========
 model Process {
   id          String    @id @default(cuid())
-  name        String    @db.VarChar(100)
+  name        String    @unique @db.VarChar(100)
   entity      String    @db.VarChar(50) // design, contract, invoice, etc
   description String?   @db.Text
   isActive    Boolean   @default(true) @map("is_active")
@@ -548,6 +568,10 @@ model WorkflowInstance {
   restaurant    Restaurant?  @relation(fields: [restaurantId], references: [id])
   logs          WorkflowLog[]
 
+  @@index([status])
+  @@index([restaurantId])
+  @@index([currentState])
+  @@index([processId])
   @@map("workflow_instances")
 }
 
@@ -573,37 +597,10 @@ model WorkflowLog {
   instance      WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   actor         User            @relation(fields: [actorId], references: [id])
 
+  @@index([timestamp])
+  @@index([instanceId])
+  @@index([action])
   @@map("workflow_logs")
 }
 
-// ========= الفهارس لتحسين الأداء =========
-// Users
-@@index([users.username])
-@@index([users.email])
-@@index([users.status])
-@@index([users.roleId])
-
-// Restaurants
-@@index([restaurants.status])
-@@index([restaurants.marketerId])
-@@index([restaurants.name])
-
-// Contracts
-@@index([contracts.status])
-@@index([contracts.restaurantId])
-@@index([contracts.startDate, contracts.endDate])
-
-// Invoices
-@@index([invoices.status])
-@@index([invoices.restaurantId])
-@@index([invoices.dueDate])
-
-// Installments
-@@index([installments.status])
-@@index([installments.dueDate])
-
-// Workflow
-@@index([workflow_instances.status])
-@@index([workflow_instances.restaurantId])
-@@index([workflow_instances.currentState])
-@@index([workflow_logs.timestamp])
+// ========= الفهارس محددة داخل النماذج لتحسين الأداء =========

@@ -328,7 +328,7 @@ async function main() {
 
   for (const processData of processes) {
     await prisma.process.upsert({
-      where: { entity: processData.entity },
+      where: { name: processData.name },
       update: processData,
       create: processData
     })

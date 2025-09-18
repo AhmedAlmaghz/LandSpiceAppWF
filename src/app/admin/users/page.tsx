@@ -51,23 +51,6 @@ export default function UsersManagementPage() {
   })
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
 
-  // التحقق من صلاحية المدير
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'admin') {
-    redirect('/auth/signin')
-  }
-
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  useEffect(() => {
-    filterUsers()
-  }, [users, filters])
-
   const fetchUsers = async () => {
     try {
       // محاكاة البيانات - سيتم استبدالها بـ API حقيقي
@@ -184,6 +167,23 @@ export default function UsersManagementPage() {
     }
 
     setFilteredUsers(filtered)
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  useEffect(() => {
+    filterUsers()
+  }, [users, filters])
+
+  // التحقق من صلاحية المدير
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'admin') {
+    redirect('/auth/signin')
   }
 
   const handleUserAction = async (userId: string, action: 'activate' | 'deactivate' | 'verify' | 'delete') => {

@@ -61,15 +61,6 @@ export default function MarketerDashboard() {
   const [dashboardData, setDashboardData] = useState<MarketerDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // التحقق من صلاحية المسوق
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'marketer') {
-    redirect('/auth/signin')
-  }
-
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -185,6 +176,15 @@ export default function MarketerDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // التحقق من صلاحية المسوق
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'marketer') {
+    redirect('/auth/signin')
   }
 
   const getActivityIcon = (type: string) => {

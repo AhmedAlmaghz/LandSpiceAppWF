@@ -51,15 +51,6 @@ export default function BankDashboard() {
   const [dashboardData, setDashboardData] = useState<BankDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // التحقق من صلاحية البنك
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'bank') {
-    redirect('/auth/signin')
-  }
-
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -142,6 +133,15 @@ export default function BankDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // التحقق من صلاحية البنك
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'bank') {
+    redirect('/auth/signin')
   }
 
   const getTransactionIcon = (type: string) => {

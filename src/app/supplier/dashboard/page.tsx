@@ -54,15 +54,6 @@ export default function SupplierDashboard() {
   const [dashboardData, setDashboardData] = useState<SupplierDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // التحقق من صلاحية المورد
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'supplier') {
-    redirect('/auth/signin')
-  }
-
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -140,6 +131,15 @@ export default function SupplierDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // التحقق من صلاحية المورد
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'supplier') {
+    redirect('/auth/signin')
   }
 
   const getStatusIcon = (status: string) => {

@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google";
 import "./globals.css";
-
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  variable: "--font-cairo",
-  display: "swap",
-});
+import Providers from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
   title: "نظام إدارة لاند سبايس",
@@ -15,10 +9,11 @@ export const metadata: Metadata = {
   authors: [{ name: "LandSpice Team" }],
   creator: "LandSpice",
   publisher: "LandSpice",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -28,12 +23,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${cairo.variable} font-cairo antialiased bg-gray-50 text-gray-900`}>
-        <div id="root">
-          {children}
-        </div>
-        <div id="modal-root" />
-        <div id="toast-root" />
+      <body className="font-arabic antialiased bg-gray-50 text-gray-900" suppressHydrationWarning={true}>
+        <Providers>
+          <div id="root">
+            {children}
+          </div>
+          <div id="modal-root" />
+          <div id="toast-root" />
+        </Providers>
       </body>
     </html>
   );

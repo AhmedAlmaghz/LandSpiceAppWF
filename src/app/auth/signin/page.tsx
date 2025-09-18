@@ -52,7 +52,7 @@ export default function SignInPage() {
       } else if (result?.ok) {
         // الحصول على معلومات المستخدم لتوجيهه للوحة المناسبة
         const session = await getSession()
-        if (session?.user?.roleName) {
+        if (session?.user?.role) {
           const roleRoutes: Record<string, string> = {
             admin: '/admin/dashboard',
             restaurant: '/restaurant/dashboard',
@@ -62,7 +62,7 @@ export default function SignInPage() {
             landspace_staff: '/staff/dashboard',
           }
           
-          const targetUrl = roleRoutes[session.user.roleName] || callbackUrl
+          const targetUrl = roleRoutes[session.user.role] || callbackUrl
           router.push(targetUrl)
         } else {
           router.push(callbackUrl)

@@ -50,19 +50,6 @@ export default function AdminDashboard() {
   const [activities, setActivities] = useState<RecentActivity[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // التحقق من صلاحية المدير
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'admin') {
-    redirect('/auth/signin')
-  }
-
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
-
   const fetchDashboardData = async () => {
     try {
       // محاكاة البيانات - سيتم استبدالها بـ API حقيقي لاحقاً
@@ -122,6 +109,19 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  // التحقق من صلاحية المدير
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'admin') {
+    redirect('/auth/signin')
   }
 
   const formatCurrency = (amount: number) => {

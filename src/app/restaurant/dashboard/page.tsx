@@ -50,15 +50,6 @@ export default function RestaurantDashboard() {
   const [dashboardData, setDashboardData] = useState<RestaurantDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // التحقق من صلاحية المطعم
-  if (status === 'loading') {
-    return <div>جاري التحميل...</div>
-  }
-
-  if (!session || session.user.roleName !== 'restaurant') {
-    redirect('/auth/signin')
-  }
-
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -127,6 +118,15 @@ export default function RestaurantDashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // التحقق من صلاحية المطعم
+  if (status === 'loading') {
+    return <div>جاري التحميل...</div>
+  }
+
+  if (!session || session.user.role !== 'restaurant') {
+    redirect('/auth/signin')
   }
 
   const getInventoryStatus = (remaining: number, quota: number) => {

@@ -14,9 +14,6 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<WorkflowInstance[]>([])
   const [view, setView] = useState<'board' | 'list'>('board')
 
-  if (status === 'loading') return <div>جاري التحميل...</div>
-  if (!session || session.user?.role !== 'admin') redirect('/auth/signin')
-
   useEffect(() => {
     // Mock workflows data
     const mockWorkflows: WorkflowInstance[] = [
@@ -46,6 +43,9 @@ export default function WorkflowsPage() {
     ]
     setWorkflows(mockWorkflows)
   }, [])
+
+  if (status === 'loading') return <div>جاري التحميل...</div>
+  if (!session || session.user?.role !== 'admin') redirect('/auth/signin')
 
   const sampleStates: WorkflowState[] = allWorkflowDefinitions[0]?.states || []
 
