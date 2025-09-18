@@ -3,24 +3,268 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+  
+  /* Colors for LandSpice brand */
+  --brand-primary: #dc2626;
+  --brand-secondary: #f97316;
+  --brand-success: #16a34a;
+  --brand-warning: #eab308;
+  --brand-error: #dc2626;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --card: #0a0a0a;
+    --card-foreground: #ededed;
+    --popover: #0a0a0a;
+    --popover-foreground: #ededed;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #1e293b;
+    --accent-foreground: #f8fafc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #3b82f6;
   }
 }
 
+* {
+  border-color: var(--border);
+}
+
 body {
-  background: var(--background);
   color: var(--foreground);
+  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* تحسينات للعربية */
+html[lang="ar"] {
+  direction: rtl;
+}
+
+html[lang="ar"] body {
+  font-family: Arial, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* أنماط مخصصة للمكونات */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.875rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
+}
+
+@layer components {
+  /* أنماط الأزرار */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  
+  .btn-primary {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300;
+  }
+  
+  .btn-success {
+    @apply btn bg-green-600 text-white hover:bg-green-700 active:bg-green-800;
+  }
+  
+  .btn-warning {
+    @apply btn bg-yellow-600 text-white hover:bg-yellow-700 active:bg-yellow-800;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800;
+  }
+  
+  /* أنماط البطاقات */
+  .card {
+    @apply rounded-lg border bg-white shadow-sm;
+  }
+  
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold leading-none tracking-tight;
+  }
+  
+  .card-description {
+    @apply text-sm text-gray-600;
+  }
+  
+  .card-content {
+    @apply p-6 pt-0;
+  }
+  
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+  
+  /* أنماط حقول الإدخال */
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  /* أنماط الجداول */
+  .table {
+    @apply w-full caption-bottom text-sm;
+  }
+  
+  .table-header {
+    @apply border-b;
+  }
+  
+  .table-body {
+    @apply [&_tr:last-child]:border-0;
+  }
+  
+  .table-row {
+    @apply border-b transition-colors hover:bg-gray-50/50 data-[state=selected]:bg-gray-50;
+  }
+  
+  .table-head {
+    @apply h-12 px-4 text-right align-middle font-medium text-gray-500 [&:has([role=checkbox])]:pr-0;
+  }
+  
+  .table-cell {
+    @apply px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0;
+  }
+  
+  /* أنماط الحالات */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .status-active {
+    @apply status-badge bg-green-100 text-green-800;
+  }
+  
+  .status-inactive {
+    @apply status-badge bg-gray-100 text-gray-800;
+  }
+  
+  .status-pending {
+    @apply status-badge bg-yellow-100 text-yellow-800;
+  }
+  
+  .status-approved {
+    @apply status-badge bg-green-100 text-green-800;
+  }
+  
+  .status-rejected {
+    @apply status-badge bg-red-100 text-red-800;
+  }
+  
+  /* أنماط التنبيهات */
+  .alert {
+    @apply relative w-full rounded-lg border p-4;
+  }
+  
+  .alert-info {
+    @apply alert border-blue-200 bg-blue-50 text-blue-900;
+  }
+  
+  .alert-success {
+    @apply alert border-green-200 bg-green-50 text-green-900;
+  }
+  
+  .alert-warning {
+    @apply alert border-yellow-200 bg-yellow-50 text-yellow-900;
+  }
+  
+  .alert-error {
+    @apply alert border-red-200 bg-red-50 text-red-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* مساعدات للعربية */
+  .rtl-flip {
+    transform: scaleX(-1);
+  }
+  
+  .ltr-content {
+    direction: ltr;
+  }
+  
+  /* انتقالات سلسة */
+  .transition-all-smooth {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* تأثيرات التحويم */
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-lg;
+  }
+  
+  /* محاذاة للعربية */
+  .text-start {
+    text-align: start;
+  }
+  
+  .text-end {
+    text-align: end;
+  }
+  
+  /* مخطط الشبكة المتجاوب */
+  .grid-responsive {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  }
+  
+  /* ظلال مخصصة */
+  .shadow-subtle {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .shadow-moderate {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* حالات التركيز المحسّنة */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
 }

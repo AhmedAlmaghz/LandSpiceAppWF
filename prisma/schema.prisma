@@ -1,0 +1,609 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========= الأدوار والصلاحيات =========
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(50)
+  displayName String?  @map("display_name") @db.VarChar(100)
+  description String?  @db.Text
+  permissions Json?    @db.Json
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // العلاقات
+  users User[]
+
+  @@map("roles")
+}
+
+// ========= المستخدمين =========
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique @db.VarChar(50)
+  email     String?  @unique @db.VarChar(150)
+  password  String   @db.Text
+  phone     String?  @db.VarChar(20)
+  firstName String?  @map("first_name") @db.VarChar(100)
+  lastName  String?  @map("last_name") @db.VarChar(100)
+  avatar    String?  @db.Text
+  
+  // الحالة والصلاحيات
+  roleId      Int     @map("role_id")
+  status      String  @default("active") @db.VarChar(20) // active, inactive, suspended
+  isVerified  Boolean @default(false) @map("is_verified")
+  lastLoginAt DateTime? @map("last_login_at")
+  
+  // التواريخ
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // العلاقات
+  role           Role                  @relation(fields: [roleId], references: [id])
+  restaurant     Restaurant?
+  bank           Bank?
+  supplier       Supplier?
+  marketedRestaurants Restaurant[]     @relation("MarketerRestaurants")
+  workflowLogs   WorkflowLog[]
+  
+  @@map("users")
+}
+
+// ========= المطاعم =========
+model Restaurant {
+  id               String    @id @default(cuid())
+  userId           String    @unique @map("user_id")
+  name             String    @db.VarChar(150)
+  businessName     String?   @map("business_name") @db.VarChar(200)
+  commercialRegNo  String?   @map("commercial_reg_no") @db.VarChar(50)
+  taxNumber        String?   @map("tax_number") @db.VarChar(50)
+  
+  // معلومات الاتصال
+  address          String?   @db.Text
+  city             String?   @db.VarChar(100)
+  district         String?   @db.VarChar(100)
+  postalCode       String?   @map("postal_code") @db.VarChar(10)
+  phone            String?   @db.VarChar(20)
+  email            String?   @db.VarChar(150)
+  website          String?   @db.VarChar(200)
+  
+  // الملفات والمعلومات
+  logo             String?   @db.Text
+  documents        Json?     @db.Json // {commercial_reg: "path", tax_cert: "path"}
+  contactInfo      Json?     @map("contact_info") @db.Json
+  
+  // المسوق المرتبط
+  marketerId       String?   @map("marketer_id")
+  
+  // حالة المطعم
+  status           String    @default("pending") @db.VarChar(30) // pending, active, suspended, terminated
+  monthlyQuota     Int       @default(18000) @map("monthly_quota") // 9000 كاتشب + 9000 شطة
+  
+  // التواريخ
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketer         User?     @relation("MarketerRestaurants", fields: [marketerId], references: [id])
+  
+  contracts        Contract[]
+  designs          Design[]
+  inventory        Inventory?
+  invoices         Invoice[]
+  productionBatches ProductionBatch[]
+  printOrderDetails PrintOrderDetail[]
+  workflowInstances WorkflowInstance[]
+
+  @@map("restaurants")
+}
+
+// ========= البنوك =========
+model Bank {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  name        String   @db.VarChar(150)
+  branch      String?  @db.VarChar(100)
+  swiftCode   String?  @map("swift_code") @db.VarChar(20)
+  
+  // معلومات الاتصال
+  address     String?  @db.Text
+  phone       String?  @db.VarChar(20)
+  email       String?  @db.VarChar(150)
+  contactInfo Json?    @map("contact_info") @db.Json
+  
+  // API Integration
+  apiEndpoint String?  @map("api_endpoint") @db.VarChar(255)
+  apiKey      String?  @map("api_key") @db.Text
+  
+  // التواريخ
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // العلاقات
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contracts   Contract[]
+  printOrders PrintOrder[]
+
+  @@map("banks")
+}
+
+// ========= الموردين =========
+model Supplier {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  name          String   @db.VarChar(150)
+  specialization String?  @db.VarChar(100) // printing, packaging, etc
+  
+  // معلومات الاتصال  
+  address       String?  @db.Text
+  phone         String?  @db.VarChar(20)
+  email         String?  @db.VarChar(150)
+  contactInfo   Json?    @map("contact_info") @db.Json
+  
+  // معلومات التقييم
+  rating        Float?   @default(5.0)
+  totalOrders   Int      @default(0) @map("total_orders")
+  
+  // التواريخ
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // العلاقات
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  printOrders   PrintOrder[]
+
+  @@map("suppliers")
+}
+
+// ========= العقود =========
+model Contract {
+  id            String    @id @default(cuid())
+  restaurantId  String    @map("restaurant_id")
+  bankId        String    @map("bank_id")
+  
+  // تفاصيل العقد
+  contractNumber String?   @unique @map("contract_number") @db.VarChar(50)
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  monthlyAmount Decimal   @map("monthly_amount") @db.Decimal(12, 2)
+  
+  // الملفات
+  contractFile  String?   @map("contract_file") @db.Text
+  signedFile    String?   @map("signed_file") @db.Text
+  
+  // الحالة
+  status        String    @default("draft") @db.VarChar(30) // draft, active, expired, terminated
+  
+  // التواريخ
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  bank          Bank       @relation(fields: [bankId], references: [id])
+  
+  guarantees    Guarantee[]
+  installments  Installment[]
+
+  @@map("contracts")
+}
+
+// ========= الضمانات البنكية =========
+model Guarantee {
+  id          String    @id @default(cuid())
+  contractId  String    @map("contract_id")
+  
+  // تفاصيل الضمانة
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("SAR") @db.VarChar(5)
+  type        String    @db.VarChar(50) // bank_guarantee, cash_deposit
+  
+  // الملفات والمستندات
+  documentFile String?  @map("document_file") @db.Text
+  referenceNo String?  @map("reference_no") @db.VarChar(100)
+  
+  // المدة والصلاحية
+  validFrom   DateTime? @map("valid_from")
+  validTo     DateTime? @map("valid_to")
+  
+  // الحالة
+  status      String    @default("pending") @db.VarChar(30) // pending, approved, rejected, expired
+  notes       String?   @db.Text
+  
+  // التواريخ
+  issuedAt    DateTime  @default(now()) @map("issued_at")
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("guarantees")
+}
+
+// ========= التصاميم =========
+model Design {
+  id           String    @id @default(cuid())
+  restaurantId String    @map("restaurant_id")
+  
+  // معلومات التصميم
+  title        String?   @db.VarChar(200)
+  description  String?   @db.Text
+  designType   String    @default("packaging") @map("design_type") @db.VarChar(50) // packaging, logo, etc
+  
+  // الملفات
+  originalFile String?   @map("original_file") @db.Text // ملف التصميم الأصلي
+  previewFile  String?   @map("preview_file") @db.Text  // ملف المعاينة
+  finalFile    String?   @map("final_file") @db.Text    // التصميم النهائي
+  
+  // المراجعة والموافقة
+  status       String    @default("draft") @db.VarChar(30) // draft, submitted, under_review, approved, rejected, needs_revision
+  notes        String?   @db.Text
+  feedback     Json?     @db.Json // ملاحظات المطعم والمصمم
+  
+  // معلومات المصمم
+  designerId   String?   @map("designer_id")
+  designerNotes String?  @map("designer_notes") @db.Text
+  
+  // التواريخ
+  submittedAt  DateTime? @map("submitted_at")
+  reviewedAt   DateTime? @map("reviewed_at")
+  approvedAt   DateTime? @map("approved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  printOrderDetails PrintOrderDetail[]
+
+  @@map("designs")
+}
+
+// ========= أوامر الطباعة =========
+model PrintOrder {
+  id          String    @id @default(cuid())
+  bankId      String    @map("bank_id")
+  supplierId  String?   @map("supplier_id")
+  
+  // معلومات الأمر
+  orderNumber String    @unique @map("order_number") @db.VarChar(50)
+  totalAmount Decimal   @map("total_amount") @db.Decimal(12, 2)
+  currency    String    @default("SAR") @db.VarChar(5)
+  
+  // الجدولة والتنفيذ
+  expectedDate DateTime? @map("expected_date")
+  deliveryDate DateTime? @map("delivery_date")
+  
+  // الحالة
+  status      String    @default("pending") @db.VarChar(30) // pending, confirmed, in_production, completed, delivered
+  notes       String?   @db.Text
+  
+  // التواريخ
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  bank        Bank      @relation(fields: [bankId], references: [id])
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  
+  details     PrintOrderDetail[]
+
+  @@map("print_orders")
+}
+
+// ========= تفاصيل أوامر الطباعة =========
+model PrintOrderDetail {
+  id           Int       @id @default(autoincrement())
+  printOrderId String    @map("print_order_id")
+  restaurantId String    @map("restaurant_id")
+  designId     String    @map("design_id")
+  
+  // الكميات والمواصفات
+  ketchupQty   Int       @default(0) @map("ketchup_qty")
+  chiliQty     Int       @default(0) @map("chili_qty")
+  unitPrice    Decimal   @map("unit_price") @db.Decimal(8, 4)
+  totalPrice   Decimal   @map("total_price") @db.Decimal(10, 2)
+  
+  // المواصفات الفنية
+  specifications Json?   @db.Json
+  
+  // التواريخ
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // العلاقات
+  printOrder   PrintOrder  @relation(fields: [printOrderId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  design       Design      @relation(fields: [designId], references: [id])
+
+  @@map("print_order_details")
+}
+
+// ========= الإنتاج =========
+model ProductionBatch {
+  id           String    @id @default(cuid())
+  restaurantId String    @map("restaurant_id")
+  
+  // معلومات الدفعة
+  batchNumber  String    @unique @map("batch_number") @db.VarChar(50)
+  productType  String    @map("product_type") @db.VarChar(20) // ketchup, chili, both
+  ketchupQty   Int       @default(0) @map("ketchup_qty")
+  chiliQty     Int       @default(0) @map("chili_qty")
+  
+  // الجدولة
+  scheduledDate DateTime @map("scheduled_date")
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  
+  // الحالة
+  status       String    @default("scheduled") @db.VarChar(30) // scheduled, in_progress, completed, cancelled
+  notes        String?   @db.Text
+  
+  // فريق الإنتاج
+  assignedTeam Json?     @map("assigned_team") @db.Json
+  
+  // التواريخ
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("production_batches")
+}
+
+// ========= المخزون =========
+model Inventory {
+  id               String    @id @default(cuid())
+  restaurantId     String    @unique @map("restaurant_id")
+  
+  // الكميات الحالية
+  ketchupRemaining Int       @default(0) @map("ketchup_remaining")
+  chiliRemaining   Int       @default(0) @map("chili_remaining")
+  
+  // الكميات المستهلكة
+  ketchupConsumed  Int       @default(0) @map("ketchup_consumed")
+  chiliConsumed    Int       @default(0) @map("chili_consumed")
+  
+  // تواريخ مهمة
+  lastDelivery     DateTime? @map("last_delivery")
+  nextDelivery     DateTime? @map("next_delivery")
+  lowStockAlert    Boolean   @default(false) @map("low_stock_alert")
+  
+  // التواريخ
+  lastUpdated      DateTime  @default(now()) @map("last_updated")
+
+  // العلاقات
+  restaurant       Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("inventory")
+}
+
+// ========= الفواتير =========
+model Invoice {
+  id           String    @id @default(cuid())
+  restaurantId String    @map("restaurant_id")
+  
+  // معلومات الفاتورة
+  invoiceNumber String   @unique @map("invoice_number") @db.VarChar(50)
+  amount       Decimal   @db.Decimal(12, 2)
+  currency     String    @default("SAR") @db.VarChar(5)
+  
+  // الفترة المشمولة
+  periodFrom   DateTime  @map("period_from")
+  periodTo     DateTime  @map("period_to")
+  
+  // الكميات المفوترة
+  ketchupQty   Int       @map("ketchup_qty")
+  chiliQty     Int       @map("chili_qty")
+  unitPrice    Decimal   @map("unit_price") @db.Decimal(8, 4)
+  
+  // الحالة والدفع
+  status       String    @default("unpaid") @db.VarChar(30) // unpaid, paid, overdue, cancelled
+  dueDate      DateTime  @map("due_date")
+  
+  // الملفات
+  invoiceFile  String?   @map("invoice_file") @db.Text
+  
+  // التواريخ
+  issuedAt     DateTime  @default(now()) @map("issued_at")
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@map("invoices")
+}
+
+// ========= المدفوعات =========
+model Payment {
+  id          String    @id @default(cuid())
+  invoiceId   String    @map("invoice_id")
+  
+  // معلومات الدفع
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("SAR") @db.VarChar(5)
+  method      String    @db.VarChar(30) // cash, transfer, cheque, card
+  
+  // تفاصيل الدفع
+  referenceNo String?   @map("reference_no") @db.VarChar(100)
+  receiptFile String?   @map("receipt_file") @db.Text
+  notes       String?   @db.Text
+  
+  // التواريخ
+  paidAt      DateTime  @default(now()) @map("paid_at")
+  confirmedAt DateTime? @map("confirmed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // العلاقات
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ========= الأقساط البنكية =========
+model Installment {
+  id         String    @id @default(cuid())
+  contractId String    @map("contract_id")
+  
+  // معلومات القسط
+  amount     Decimal   @db.Decimal(12, 2)
+  currency   String    @default("SAR") @db.VarChar(5)
+  dueDate    DateTime  @map("due_date")
+  
+  // الحالة والدفع
+  status     String    @default("pending") @db.VarChar(30) // pending, paid, overdue, cancelled
+  paidAt     DateTime? @map("paid_at")
+  
+  // تفاصيل إضافية
+  notes      String?   @db.Text
+  
+  // التواريخ
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("installments")
+}
+
+// ========= إدارة سير العمل =========
+model Process {
+  id          String    @id @default(cuid())
+  name        String    @db.VarChar(100)
+  entity      String    @db.VarChar(50) // design, contract, invoice, etc
+  description String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  
+  // التواريخ
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  steps       ProcessStep[]
+  instances   WorkflowInstance[]
+
+  @@map("processes")
+}
+
+model ProcessStep {
+  id             String    @id @default(cuid())
+  processId      String    @map("process_id")
+  stepOrder      Int       @map("step_order")
+  stepName       String    @map("step_name") @db.VarChar(100)
+  responsibleRole Int      @map("responsible_role")
+  allowedActions String[]  @map("allowed_actions")
+  nextState      String?   @map("next_state") @db.VarChar(50)
+  prevState      String?   @map("prev_state") @db.VarChar(50)
+  isRequired     Boolean   @default(true) @map("is_required")
+  
+  // التواريخ
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // العلاقات
+  process        Process   @relation(fields: [processId], references: [id], onDelete: Cascade)
+  role           Role      @relation(fields: [responsibleRole], references: [id])
+  instances      WorkflowInstance[]
+
+  @@map("process_steps")
+}
+
+model WorkflowInstance {
+  id            String    @id @default(cuid())
+  processId     String    @map("process_id")
+  entityId      String    @map("entity_id") // design_id, contract_id, etc
+  restaurantId  String?   @map("restaurant_id") // للفلترة السريعة
+  
+  // الحالة الحالية
+  currentStepId String    @map("current_step_id")
+  currentState  String    @map("current_state") @db.VarChar(50)
+  
+  // معلومات عامة
+  status        String    @default("active") @db.VarChar(20) // active, completed, cancelled
+  metadata      Json?     @db.Json // معلومات إضافية
+  
+  // التواريخ
+  startedAt     DateTime  @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // العلاقات
+  process       Process      @relation(fields: [processId], references: [id])
+  currentStep   ProcessStep  @relation(fields: [currentStepId], references: [id])
+  restaurant    Restaurant?  @relation(fields: [restaurantId], references: [id])
+  logs          WorkflowLog[]
+
+  @@map("workflow_instances")
+}
+
+model WorkflowLog {
+  id            BigInt    @id @default(autoincrement())
+  instanceId    String    @map("instance_id")
+  stepId        String    @map("step_id")
+  actorId       String    @map("actor_id")
+  
+  // تفاصيل الإجراء
+  action        String    @db.VarChar(100) // approved, rejected, submitted, etc
+  prevState     String?   @map("prev_state") @db.VarChar(50)
+  newState      String    @map("new_state") @db.VarChar(50)
+  
+  // تفاصيل إضافية
+  notes         String?   @db.Text
+  metadata      Json?     @db.Json
+  
+  // التوقيت
+  timestamp     DateTime  @default(now())
+
+  // العلاقات
+  instance      WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  actor         User            @relation(fields: [actorId], references: [id])
+
+  @@map("workflow_logs")
+}
+
+// ========= الفهارس لتحسين الأداء =========
+// Users
+@@index([users.username])
+@@index([users.email])
+@@index([users.status])
+@@index([users.roleId])
+
+// Restaurants
+@@index([restaurants.status])
+@@index([restaurants.marketerId])
+@@index([restaurants.name])
+
+// Contracts
+@@index([contracts.status])
+@@index([contracts.restaurantId])
+@@index([contracts.startDate, contracts.endDate])
+
+// Invoices
+@@index([invoices.status])
+@@index([invoices.restaurantId])
+@@index([invoices.dueDate])
+
+// Installments
+@@index([installments.status])
+@@index([installments.dueDate])
+
+// Workflow
+@@index([workflow_instances.status])
+@@index([workflow_instances.restaurantId])
+@@index([workflow_instances.currentState])
+@@index([workflow_logs.timestamp])
