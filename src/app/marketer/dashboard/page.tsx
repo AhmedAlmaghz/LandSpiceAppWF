@@ -6,6 +6,10 @@ import { redirect } from 'next/navigation'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import StatCard from '@/components/dashboard/StatCard'
+import Chart from '@/components/dashboard/Chart'
+import ActivityFeed from '@/components/dashboard/ActivityFeed'
+import ProtectedComponent from '@/components/auth/ProtectedComponent'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface MarketerDashboardData {

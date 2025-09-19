@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { canAccessRoute, UserRole } from "@/lib/permissions"
 
 // المسارات التي لا تحتاج مصادقة
 const publicPaths = [
@@ -13,14 +14,14 @@ const publicPaths = [
   "/favicon.ico",
 ]
 
-// المسارات المحمية حسب الدور
+// المسارات المحمية حسب الدور مع نظام الصلاحيات المتقدم
 const roleBasedPaths: Record<string, string[]> = {
   admin: ["/admin"],
   restaurant: ["/restaurant"],
   bank: ["/bank"],
   supplier: ["/supplier"],
   marketer: ["/marketer"],
-  landspace_staff: ["/staff"],
+  landspice_employee: ["/staff", "/landspice"],
 }
 
 export default auth((req) => {
@@ -39,20 +40,16 @@ export default auth((req) => {
   }
 
   const user = req.auth.user
-  const userRole = user.roleName
+  const userRole = user.role as UserRole
 
   // التحقق من حالة المستخدم
   if (user.status !== "active") {
     return NextResponse.redirect(new URL("/auth/error?error=AccountDeactivated", req.url))
   }
 
-  // التحقق من الصلاحيات حسب المسار
-  for (const [role, paths] of Object.entries(roleBasedPaths)) {
-    if (paths.some(path => pathname.startsWith(path))) {
-      if (userRole !== role && userRole !== "admin") {
-        return NextResponse.redirect(new URL("/unauthorized", req.url))
-      }
-    }
+  // استخدام نظام الصلاحيات المتقدم للتحقق من الوصول
+  if (!canAccessRoute(userRole, pathname)) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url))
   }
 
   // إعادة توجيه المستخدم للوحة التحكم المناسبة بناءً على دوره
@@ -68,7 +65,7 @@ export default auth((req) => {
         return NextResponse.redirect(new URL("/supplier/dashboard", req.url))
       case "marketer":
         return NextResponse.redirect(new URL("/marketer/dashboard", req.url))
-      case "landspace_staff":
+      case "landspice_employee":
         return NextResponse.redirect(new URL("/staff/dashboard", req.url))
       default:
         return NextResponse.redirect(new URL("/auth/signin", req.url))

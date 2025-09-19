@@ -6,6 +6,11 @@ import { redirect } from 'next/navigation'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import StatCard from '@/components/dashboard/StatCard'
+import Chart from '@/components/dashboard/Chart'
+import ActivityFeed from '@/components/dashboard/ActivityFeed'
+import NotificationCenter from '@/components/dashboard/NotificationCenter'
+import ProtectedComponent from '@/components/auth/ProtectedComponent'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface BankDashboardData {
@@ -206,7 +211,7 @@ export default function BankDashboard() {
                 🏦 {dashboardData.bank.name}
               </h1>
               <p className="text-gray-600">
-                {dashboardData.bank.branch} - أهلاً بك، {session.user.name || session.user.username}
+                {dashboardData.bank.branch} - أهلاً بك، {session.user.firstName ? `${session.user.firstName} ${session.user.lastName || ''}` : session.user.username}
               </p>
             </div>
             

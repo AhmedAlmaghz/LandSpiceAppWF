@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
+import AppLayout from "@/components/layout/AppLayout";
 
 export const metadata: Metadata = {
   title: "نظام إدارة لاند سبايس",
@@ -25,11 +26,13 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className="font-arabic antialiased bg-gray-50 text-gray-900" suppressHydrationWarning={true}>
         <Providers>
-          <div id="root">
-            {children}
-          </div>
-          <div id="modal-root" />
-          <div id="toast-root" />
+          <AppLayout>
+            <div id="root">
+              {children}
+            </div>
+            <div id="modal-root" />
+            <div id="toast-root" />
+          </AppLayout>
         </Providers>
       </body>
     </html>

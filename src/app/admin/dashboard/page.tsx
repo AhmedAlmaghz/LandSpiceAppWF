@@ -52,60 +52,74 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // محاكاة البيانات - سيتم استبدالها بـ API حقيقي لاحقاً
-      setStats({
-        totalUsers: 156,
-        activeUsers: 142,
-        pendingUsers: 14,
-        totalRestaurants: 89,
-        activeContracts: 76,
-        monthlyRevenue: 485750,
-        pendingOrders: 23,
-        lowStockAlerts: 8
-      })
+      // جلب الإحصائيات من API
+      const statsResponse = await fetch('/api/dashboard/stats')
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        setStats(statsData.data)
+      }
 
-      setActivities([
-        {
-          id: '1',
-          type: 'success',
-          title: 'تسجيل مطعم جديد',
-          description: 'مطعم الطازج قام بالتسجيل بنجاح في النظام',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          user: { name: 'مطعم الطازج', role: 'مطعم' }
-        },
-        {
-          id: '2',
-          type: 'success',
-          title: 'توقيع عقد جديد',
-          description: 'تم توقيع عقد مع مطعم البيك الجديد بنجاح',
-          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-          user: { name: 'مطعم البيك', role: 'مطعم' }
-        },
-        {
-          id: '3',
-          type: 'info',
-          title: 'اكتمال طلب طباعة',
-          description: 'تم إنجاز طلب طباعة لـ 5 مطاعم بنجاح',
-          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000)
-        },
-        {
-          id: '4',
-          type: 'success',
-          title: 'استلام دفعة',
-          description: 'تم استلام دفعة 15,500 ريال من مطعم الدانة',
-          timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-          user: { name: 'مطعم الدانة', role: 'مطعم' }
-        },
-        {
-          id: '5',
-          type: 'warning',
-          title: 'مخزون منخفض',
-          description: 'مستوى المخزون منخفض لعبوات الشطة الحارة',
-          timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
-        }
-      ])
+      // جلب النشاطات الأخيرة من API
+      const activitiesResponse = await fetch('/api/dashboard/activities')
+      if (activitiesResponse.ok) {
+        const activitiesData = await activitiesResponse.json()
+        setActivities(activitiesData.data || [])
+      } else {
+        // البيانات الافتراضية في حال عدم توفر API
+        setActivities([
+          {
+            id: '1',
+            type: 'success',
+            title: 'تسجيل مطعم جديد',
+            description: 'مطعم الطازج قام بالتسجيل بنجاح في النظام',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+            user: { name: 'مطعم الطازج', role: 'مطعم' }
+          },
+          {
+            id: '2',
+            type: 'success',
+            title: 'توقيع عقد جديد',
+            description: 'تم توقيع عقد مع مطعم البيك الجديد بنجاح',
+            timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
+            user: { name: 'مطعم البيك', role: 'مطعم' }
+          },
+          {
+            id: '3',
+            type: 'info',
+            title: 'اكتمال طلب طباعة',
+            description: 'تم إنجاز طلب طباعة لـ 5 مطاعم بنجاح',
+            timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000)
+          },
+          {
+            id: '4',
+            type: 'success',
+            title: 'استلام دفعة',
+            description: 'تم استلام دفعة 15,500 ريال من مطعم الدانة',
+            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+            user: { name: 'مطعم الدانة', role: 'مطعم' }
+          },
+          {
+            id: '5',
+            type: 'warning',
+            title: 'مخزون منخفض',
+            description: 'مستوى المخزون منخفض لعبوات الشطة الحارة',
+            timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
+          }
+        ])
+      }
     } catch (error) {
       console.error('خطأ في جلب البيانات:', error)
+      // استخدام البيانات الافتراضية في حال حدوث خطأ
+      setStats({
+        totalUsers: 0,
+        activeUsers: 0,
+        pendingUsers: 0,
+        totalRestaurants: 0,
+        activeContracts: 0,
+        monthlyRevenue: 0,
+        pendingOrders: 0,
+        lowStockAlerts: 0
+      })
     } finally {
       setIsLoading(false)
     }
@@ -203,7 +217,7 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">لوحة التحكم الرئيسية</h1>
-              <p className="text-gray-600">أهلاً بك، {session.user.name || session.user.username}</p>
+              <p className="text-gray-600">أهلاً بك، {session.user.firstName || session.user.username}</p>
             </div>
             
             <div className="flex items-center space-x-4 space-x-reverse">

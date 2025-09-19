@@ -7,6 +7,11 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import DataTable from '@/components/dashboard/DataTable'
+import AdvancedSearch from '@/components/dashboard/AdvancedSearch'
+import ExportTools from '@/components/dashboard/ExportTools'
+import StatCard from '@/components/dashboard/StatCard'
+import ProtectedComponent, { usePermissions } from '@/components/auth/ProtectedComponent'
 import { getStatusColor, getStatusText, formatDate } from '@/lib/utils'
 
 // Types
@@ -50,10 +55,47 @@ export default function UsersManagementPage() {
     status: ''
   })
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  })
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    pending: 0
+  })
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1, limit = 10, searchParams: any = {}) => {
     try {
-      // محاكاة البيانات - سيتم استبدالها بـ API حقيقي
+      setIsLoading(true)
+      
+      // بناء query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...searchParams
+      })
+
+      const response = await fetch(`/api/admin/users?${params}`)
+      
+      if (!response.ok) {
+        throw new Error('فشل في جلب البيانات')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setUsers(data.data.users)
+        setPagination(data.data.pagination)
+      } else {
+        throw new Error(data.error || 'خطأ غير معروف')
+      }
+    } catch (error) {
+      console.error('خطأ في جلب المستخدمين:', error)
+      // استخدام البيانات الافتراضية في حال فشل API
       const mockUsers: User[] = [
         {
           id: '1',
@@ -84,64 +126,9 @@ export default function UsersManagementPage() {
             name: 'مطعم البيك',
             status: 'active'
           }
-        },
-        {
-          id: '3',
-          username: 'alqasemi_bank',
-          email: 'bank@alqasemi.com',
-          firstName: 'بنك',
-          lastName: 'القاسمي',
-          role: { id: 3, name: 'bank', displayName: 'بنك' },
-          status: 'active',
-          isVerified: true,
-          createdAt: new Date('2025-01-05'),
-          lastLoginAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        },
-        {
-          id: '4',
-          username: 'print_supplier',
-          email: 'orders@printsupplier.com',
-          firstName: 'مؤسسة',
-          lastName: 'الطباعة المتقدمة',
-          role: { id: 4, name: 'supplier', displayName: 'مورد' },
-          status: 'active',
-          isVerified: true,
-          createdAt: new Date('2025-01-08'),
-          lastLoginAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-        },
-        {
-          id: '5',
-          username: 'ahmed_marketer',
-          email: 'ahmed@landspace.com',
-          firstName: 'أحمد',
-          lastName: 'المسوق',
-          phone: '+966505678901',
-          role: { id: 5, name: 'marketer', displayName: 'مسوق' },
-          status: 'active',
-          isVerified: true,
-          createdAt: new Date('2025-01-12')
-        },
-        {
-          id: '6',
-          username: 'new_restaurant',
-          email: 'info@newrest.com',
-          firstName: 'مطعم',
-          lastName: 'جديد',
-          role: { id: 2, name: 'restaurant', displayName: 'مطعم' },
-          status: 'inactive',
-          isVerified: false,
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          restaurant: {
-            id: 'r2',
-            name: 'مطعم جديد',
-            status: 'pending'
-          }
         }
       ]
-
       setUsers(mockUsers)
-    } catch (error) {
-      console.error('خطأ في جلب المستخدمين:', error)
     } finally {
       setIsLoading(false)
     }
@@ -188,28 +175,46 @@ export default function UsersManagementPage() {
 
   const handleUserAction = async (userId: string, action: 'activate' | 'deactivate' | 'verify' | 'delete') => {
     try {
-      // محاكاة API call
-      console.log(`تنفيذ ${action} للمستخدم ${userId}`)
+      let response;
       
-      setUsers(prevUsers => 
-        prevUsers.map(user => {
-          if (user.id === userId) {
-            switch (action) {
-              case 'activate':
-                return { ...user, status: 'active' }
-              case 'deactivate':
-                return { ...user, status: 'inactive' }
-              case 'verify':
-                return { ...user, isVerified: true }
-              case 'delete':
-                return user // سيتم إزالته من القائمة
-              default:
-                return user
-            }
-          }
-          return user
-        }).filter(user => action !== 'delete' || user.id !== userId)
-      )
+      switch (action) {
+        case 'activate':
+        case 'deactivate':
+          response = await fetch(`/api/admin/users`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: userId,
+              status: action === 'activate' ? 'active' : 'inactive'
+            })
+          })
+          break
+        case 'verify':
+          response = await fetch(`/api/admin/users`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: userId,
+              isVerified: true
+            })
+          })
+          break
+        case 'delete':
+          response = await fetch(`/api/admin/users?id=${userId}`, {
+            method: 'DELETE'
+          })
+          break
+      }
+
+      if (response?.ok) {
+        const data = await response.json()
+        if (data.success) {
+          // إعادة تحميل البيانات
+          await fetchUsers(pagination.page, pagination.limit, filters)
+        } else {
+          console.error('خطأ:', data.error)
+        }
+      }
     } catch (error) {
       console.error(`خطأ في ${action}:`, error)
     }
