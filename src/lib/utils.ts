@@ -110,6 +110,9 @@ export function getStatusColor(status: string): string {
     'draft': 'bg-gray-100 text-gray-800',
     'under_review': 'bg-yellow-100 text-yellow-800',
     'needs_revision': 'bg-orange-100 text-orange-800',
+    
+    // حالة غير معروفة
+    'unknown': 'bg-gray-100 text-gray-600',
   }
   
   return statusColors[status] || 'bg-gray-100 text-gray-800'
@@ -168,6 +171,9 @@ export function getStatusText(status: string): string {
     // حالات العقود
     'expired': 'منتهي الصلاحية',
     'terminated': 'مُنهى',
+    
+    // حالة غير معروفة
+    'unknown': 'غير محدد',
   }
   
   return statusTexts[status] || status

@@ -6,10 +6,6 @@ import { redirect } from 'next/navigation'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import StatCard from '@/components/dashboard/StatCard'
-import Chart from '@/components/dashboard/Chart'
-import ActivityFeed from '@/components/dashboard/ActivityFeed'
-import ProtectedComponent from '@/components/auth/ProtectedComponent'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface MarketerDashboardData {
@@ -75,8 +71,8 @@ export default function MarketerDashboard() {
       const mockData: MarketerDashboardData = {
         marketer: {
           id: 'm1',
-          name: 'أحمد المسوق',
-          region: 'الرياض الكبرى',
+          name: 'عبدالله النجار',
+          region: 'صنعاء الكبرى',
           joinDate: new Date('2024-06-01')
         },
         performance: {

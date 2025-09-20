@@ -14,7 +14,7 @@ interface StatCardProps {
     label: string
     isPositive?: boolean
   }
-  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange'
+  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange' | 'gray'
   size?: 'sm' | 'md' | 'lg'
   className?: string
   onClick?: () => void
@@ -63,6 +63,11 @@ const StatCard: React.FC<StatCardProps> = ({
       icon: 'text-orange-600 bg-orange-100',
       trend: 'text-orange-600',
       accent: 'border-r-orange-500'
+    },
+    gray: {
+      icon: 'text-gray-600 bg-gray-100',
+      trend: 'text-gray-600',
+      accent: 'border-r-gray-500'
     }
   }
 
@@ -90,8 +95,8 @@ const StatCard: React.FC<StatCardProps> = ({
     }
   }
 
-  const colors = colorVariants[color]
-  const sizes = sizeVariants[size]
+  const colors = colorVariants[color] || colorVariants.blue // fallback to blue if color not found
+  const sizes = sizeVariants[size] || sizeVariants.md   // fallback to md if size not found
 
   if (loading) {
     return (

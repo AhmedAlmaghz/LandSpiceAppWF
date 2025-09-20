@@ -1,0 +1,11 @@
+// Dashboard components export
+export { default as StatCard } from './StatCard'
+export { default as DataTable } from './DataTable'
+export { default as Chart } from './Chart'
+export { default as ChartJS } from './ChartJS'
+export { default as ActivityFeed } from './ActivityFeed'
+export { default as NotificationPanel } from './NotificationPanel'
+export { default as MetricCard } from './MetricCard'
+export { default as ProgressBar } from './ProgressBar'
+export { default as KPIWidget } from './KPIWidget'
+export { default as AdvancedSearch } from './AdvancedSearch'

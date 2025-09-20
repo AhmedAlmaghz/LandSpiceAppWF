@@ -597,13 +597,13 @@ export default function SupplierProductsPage() {
                 onSearch={(searchParams: any) => setFilters(prev => ({ ...prev, ...searchParams }))}
                 filters={[
                   {
-                    key: 'search',
+                    id: 'search',
                     type: 'text',
                     placeholder: 'البحث في المنتجات...',
                     label: 'البحث العام'
                   },
                   {
-                    key: 'category',
+                    id: 'category',
                     type: 'select',
                     label: 'الفئة',
                     options: [
@@ -615,7 +615,7 @@ export default function SupplierProductsPage() {
                     ]
                   },
                   {
-                    key: 'status',
+                    id: 'status',
                     type: 'select',
                     label: 'الحالة',
                     options: [

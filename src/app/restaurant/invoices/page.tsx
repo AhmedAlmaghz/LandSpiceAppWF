@@ -301,13 +301,13 @@ export default function RestaurantInvoicesPage() {
       label: 'الفاتورة',
       render: (invoice: Invoice) => (
         <div className="space-y-1">
-          <div className="font-medium text-gray-900">{invoice.invoiceNumber}</div>
+          <div className="font-medium text-gray-900">{invoice?.invoiceNumber || 'غير محدد'}</div>
           <div className="text-sm text-gray-500">
-            {formatDate(invoice.issuedAt)}
+            {invoice?.issuedAt ? formatDate(invoice.issuedAt) : 'غير محدد'}
           </div>
           <div className="flex items-center space-x-2 space-x-reverse">
-            <span className="text-lg">{getTypeIcon(invoice.type)}</span>
-            <span className="text-xs text-gray-600">{getTypeText(invoice.type)}</span>
+            <span className="text-lg">{getTypeIcon(invoice?.type || 'unknown')}</span>
+            <span className="text-xs text-gray-600">{getTypeText(invoice?.type || 'unknown')}</span>
           </div>
         </div>
       )
@@ -317,9 +317,9 @@ export default function RestaurantInvoicesPage() {
       label: 'الوصف',
       render: (invoice: Invoice) => (
         <div className="space-y-1">
-          <div className="font-medium text-gray-900">{invoice.description}</div>
+          <div className="font-medium text-gray-900">{invoice?.description || 'غير محدد'}</div>
           <div className="text-sm text-gray-600">
-            {invoice.items.length} بند
+            {(invoice?.items?.length || 0)} بند
           </div>
         </div>
       )
@@ -330,10 +330,10 @@ export default function RestaurantInvoicesPage() {
       render: (invoice: Invoice) => (
         <div className="text-center">
           <div className="text-lg font-medium text-gray-900">
-            {formatCurrency(invoice.totalAmount)}
+            {formatCurrency(invoice?.totalAmount || 0)}
           </div>
           <div className="text-sm text-gray-600">
-            شامل الضريبة: {formatCurrency(invoice.taxAmount)}
+            شامل الضريبة: {formatCurrency(invoice?.taxAmount || 0)}
           </div>
         </div>
       )
@@ -344,11 +344,11 @@ export default function RestaurantInvoicesPage() {
       render: (invoice: Invoice) => (
         <div className="text-center">
           <div className="font-medium text-gray-900">
-            {formatDate(invoice.dueDate)}
+            {invoice?.dueDate ? formatDate(invoice.dueDate) : 'غير محدد'}
           </div>
-          {invoice.paidDate && (
+          {invoice?.paidDate && (
             <div className="text-sm text-green-600">
-              دُفعت: {formatDate(invoice.paidDate)}
+              دُعت: {formatDate(invoice.paidDate)}
             </div>
           )}
         </div>
@@ -359,13 +359,13 @@ export default function RestaurantInvoicesPage() {
       label: 'الحالة',
       render: (invoice: Invoice) => (
         <div className="text-center">
-          <span className={`status-badge ${getStatusColor(invoice.status)}`}>
-            {getStatusText(invoice.status)}
+          <span className={`status-badge ${getStatusColor(invoice?.status || 'unknown')}`}>
+            {getStatusText(invoice?.status || 'unknown')}
           </span>
-          {invoice.paymentMethod && invoice.status === 'paid' && (
+          {invoice?.paymentMethod && (invoice?.status || '') === 'paid' && (
             <div className="text-xs text-gray-500 mt-1">
-              {invoice.paymentMethod === 'bank_transfer' ? '🏦 تحويل بنكي' :
-               invoice.paymentMethod === 'cash' ? '💰 نقدي' : '📝 شيك'}
+              {(invoice?.paymentMethod || '') === 'bank_transfer' ? '🏦 تحويل بنكي' :
+               (invoice?.paymentMethod || '') === 'cash' ? '💰 نقدي' : '📝 شيك'}
             </div>
           )}
         </div>
@@ -379,7 +379,8 @@ export default function RestaurantInvoicesPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => router.push(`/restaurant/invoices/${invoice.id}`)}
+            onClick={() => router.push(`/restaurant/invoices/${invoice?.id || ''}`)}
+            disabled={!invoice?.id}
           >
             👁️ عرض
           </Button>
@@ -387,16 +388,18 @@ export default function RestaurantInvoicesPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')}
+            onClick={() => window.open(`/api/invoices/${invoice?.id || ''}/pdf`, '_blank')}
+            disabled={!invoice?.id}
           >
             📄 PDF
           </Button>
           
-          {invoice.status === 'sent' && (
+          {(invoice?.status || '') === 'sent' && (
             <Button
               size="sm"
               variant="primary"
-              onClick={() => router.push(`/restaurant/invoices/${invoice.id}/pay`)}
+              onClick={() => router.push(`/restaurant/invoices/${invoice?.id || ''}/pay`)}
+              disabled={!invoice?.id}
             >
               💳 دفع
             </Button>
@@ -544,42 +547,39 @@ export default function RestaurantInvoicesPage() {
                 onSearch={handleSearch}
                 filters={[
                   {
-                    key: 'search',
+                    id: 'search',
                     type: 'text',
                     placeholder: 'البحث في الفواتير...',
                     label: 'البحث العام'
                   },
                   {
-                    key: 'status',
+                    id: 'status',
                     type: 'select',
                     label: 'الحالة',
                     options: [
                       { value: '', label: 'جميع الحالات' },
+                      { value: 'pending', label: 'معلقة' },
                       { value: 'paid', label: 'مدفوعة' },
-                      { value: 'sent', label: 'مُرسلة' },
-                      { value: 'overdue', label: 'متأخرة' },
-                      { value: 'cancelled', label: 'ملغية' }
+                      { value: 'overdue', label: 'متأخرة' }
                     ]
                   },
                   {
-                    key: 'type',
+                    id: 'type',
                     type: 'select',
                     label: 'النوع',
                     options: [
                       { value: '', label: 'جميع الأنواع' },
-                      { value: 'monthly_fee', label: 'رسوم شهرية' },
-                      { value: 'order_payment', label: 'دفعة طلب' },
-                      { value: 'additional_service', label: 'خدمة إضافية' },
-                      { value: 'penalty', label: 'غرامة' }
+                      { value: 'order', label: 'فاتورة طلب' },
+                      { value: 'service', label: 'فاتورة خدمة' }
                     ]
                   },
                   {
-                    key: 'dateFrom',
+                    id: 'dateFrom',
                     type: 'date',
                     label: 'من تاريخ'
                   },
                   {
-                    key: 'dateTo',
+                    id: 'dateTo',
                     type: 'date',
                     label: 'إلى تاريخ'
                   }

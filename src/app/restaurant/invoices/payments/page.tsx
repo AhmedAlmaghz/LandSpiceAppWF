@@ -202,6 +202,7 @@ export default function PaymentsPage() {
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       case 'failed': return 'bg-red-100 text-red-800'
       case 'cancelled': return 'bg-gray-100 text-gray-800'
+      case 'unknown': return 'bg-gray-100 text-gray-600'
       default: return 'bg-blue-100 text-blue-800'
     }
   }
@@ -212,6 +213,7 @@ export default function PaymentsPage() {
       case 'pending': return '⏳ قيد المعالجة'
       case 'failed': return '❌ فشلت'
       case 'cancelled': return '🚫 ملغية'
+      case 'unknown': return '❓ غير محدد'
       default: return status
     }
   }
@@ -221,6 +223,7 @@ export default function PaymentsPage() {
       case 'bank_transfer': return '🏦'
       case 'cash': return '💰'
       case 'check': return '📝'
+      case 'unknown': return '❓'
       default: return '💳'
     }
   }
@@ -230,6 +233,7 @@ export default function PaymentsPage() {
       case 'bank_transfer': return 'تحويل بنكي'
       case 'cash': return 'نقدي'
       case 'check': return 'شيك'
+      case 'unknown': return 'غير محدد'
       default: return method
     }
   }
@@ -250,12 +254,12 @@ export default function PaymentsPage() {
       label: 'المدفوعة',
       render: (payment: Payment) => (
         <div className="space-y-1">
-          <div className="font-medium text-gray-900">{payment.reference}</div>
+          <div className="font-medium text-gray-900">{payment?.reference || 'غير محدد'}</div>
           <div className="text-sm text-gray-500">
-            فاتورة: {payment.invoiceNumber}
+            فاتورة: {payment?.invoiceNumber || 'غير محدد'}
           </div>
           <div className="text-xs text-gray-400">
-            {formatDate(payment.paidAt)}
+            {payment?.paidAt ? formatDate(payment.paidAt) : 'غير محدد'}
           </div>
         </div>
       )
@@ -266,7 +270,7 @@ export default function PaymentsPage() {
       render: (payment: Payment) => (
         <div className="text-center">
           <div className="text-lg font-medium text-gray-900">
-            {formatCurrency(payment.amount)}
+            {formatCurrency(payment?.amount || 0)}
           </div>
         </div>
       )
@@ -277,12 +281,12 @@ export default function PaymentsPage() {
       render: (payment: Payment) => (
         <div className="text-center">
           <div className="flex items-center justify-center space-x-2 space-x-reverse">
-            <span className="text-xl">{getMethodIcon(payment.method)}</span>
-            <span className="text-sm">{getMethodText(payment.method)}</span>
+            <span className="text-xl">{getMethodIcon(payment?.method || 'unknown')}</span>
+            <span className="text-sm">{getMethodText(payment?.method || 'unknown')}</span>
           </div>
-          {payment.bankDetails && (
+          {payment?.bankDetails && (
             <div className="text-xs text-gray-500 mt-1">
-              {payment.bankDetails.bankName}
+              {payment.bankDetails.bankName || 'غير محدد'}
             </div>
           )}
         </div>
@@ -293,8 +297,8 @@ export default function PaymentsPage() {
       label: 'الحالة',
       render: (payment: Payment) => (
         <div className="text-center">
-          <span className={`status-badge ${getStatusColor(payment.status)}`}>
-            {getStatusText(payment.status)}
+          <span className={`status-badge ${getStatusColor(payment?.status || 'unknown')}`}>
+            {getStatusText(payment?.status || 'unknown')}
           </span>
         </div>
       )
@@ -307,7 +311,8 @@ export default function PaymentsPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => router.push(`/restaurant/invoices/${payment.invoiceId}`)}
+            onClick={() => router.push(`/restaurant/invoices/${payment?.invoiceId || ''}`)}
+            disabled={!payment?.invoiceId}
           >
             🧾 الفاتورة
           </Button>
@@ -315,7 +320,8 @@ export default function PaymentsPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => window.open(`/api/payments/${payment.id}/receipt`, '_blank')}
+            onClick={() => window.open(`/api/payments/${payment?.id || ''}/receipt`, '_blank')}
+            disabled={!payment?.id}
           >
             📄 إيصال
           </Button>

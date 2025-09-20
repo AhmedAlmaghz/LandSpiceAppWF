@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -49,8 +49,17 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasActiveFilters, setHasActiveFilters] = useState(false)
 
+  // مرجع لتتبع آخر قيمة للمرشحات الأولية
+  const prevInitialFiltersRef = useRef<SearchFilter>({})
+
   useEffect(() => {
-    setSearchFilters(initialFilters)
+    // فحص إذا كانت المرشحات الأولية تغيرت فعلاً
+    const hasChanged = JSON.stringify(prevInitialFiltersRef.current) !== JSON.stringify(initialFilters)
+    
+    if (hasChanged) {
+      setSearchFilters(initialFilters)
+      prevInitialFiltersRef.current = initialFilters
+    }
   }, [initialFilters])
 
   useEffect(() => {

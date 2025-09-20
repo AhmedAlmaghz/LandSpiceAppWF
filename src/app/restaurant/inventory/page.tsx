@@ -241,6 +241,8 @@ export default function RestaurantInventoryPage() {
         return 'bg-yellow-100 text-yellow-800'
       case 'out_of_stock':
         return 'bg-red-100 text-red-800'
+      case 'unknown':
+        return 'bg-gray-100 text-gray-600'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -254,6 +256,8 @@ export default function RestaurantInventoryPage() {
         return 'منخفض'
       case 'out_of_stock':
         return 'نفد'
+      case 'unknown':
+        return 'غير محدد'
       default:
         return 'غير معروف'
     }
@@ -267,6 +271,8 @@ export default function RestaurantInventoryPage() {
         return '🌶️'
       case 'mixed':
         return '🥫'
+      case 'unknown':
+        return '❓'
       default:
         return '📦'
     }
@@ -274,8 +280,8 @@ export default function RestaurantInventoryPage() {
 
   // تصفية البيانات
   const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || item.status === filterStatus
+    const matchesSearch = (item?.productName || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesFilter = filterStatus === 'all' || (item?.status || 'unknown') === filterStatus
     return matchesSearch && matchesFilter
   })
 
@@ -286,11 +292,11 @@ export default function RestaurantInventoryPage() {
       label: 'المنتج',
       render: (item: InventoryItem) => (
         <div className="flex items-center space-x-3 space-x-reverse">
-          <div className="text-2xl">{getStockIcon(item.productType)}</div>
+          <div className="text-2xl">{getStockIcon(item?.productType || 'unknown')}</div>
           <div>
-            <div className="font-medium text-gray-900">{item.productName}</div>
-            <div className="text-sm text-gray-500">المورد: {item.supplier}</div>
-            {item.expiryDate && (
+            <div className="font-medium text-gray-900">{item?.productName || 'غير محدد'}</div>
+            <div className="text-sm text-gray-500">المورد: {item?.supplier || 'غير محدد'}</div>
+            {item?.expiryDate && (
               <div className="text-xs text-gray-400">
                 انتهاء الصلاحية: {formatDate(item.expiryDate)}
               </div>
@@ -305,20 +311,20 @@ export default function RestaurantInventoryPage() {
       render: (item: InventoryItem) => (
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-900">
-            {item.currentStock.toLocaleString()}
+            {(item?.currentStock || 0).toLocaleString()}
           </div>
           <div className="text-sm text-gray-600">
-            الحد الأدنى: {item.minStock.toLocaleString()}
+            الحد الأدنى: {(item?.minStock || 0).toLocaleString()}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
             <div 
               className={`h-2 rounded-full ${
-                item.currentStock <= item.minStock ? 'bg-red-500' :
-                item.currentStock <= item.minStock * 1.5 ? 'bg-yellow-500' :
+                (item?.currentStock || 0) <= (item?.minStock || 0) ? 'bg-red-500' :
+                (item?.currentStock || 0) <= (item?.minStock || 0) * 1.5 ? 'bg-yellow-500' :
                 'bg-green-500'
               }`}
               style={{ 
-                width: `${Math.min((item.currentStock / item.maxStock) * 100, 100)}%` 
+                width: `${Math.min(((item?.currentStock || 0) / (item?.maxStock || 1)) * 100, 100)}%` 
               }}
             ></div>
           </div>
@@ -331,10 +337,10 @@ export default function RestaurantInventoryPage() {
       render: (item: InventoryItem) => (
         <div className="text-center">
           <div className="text-lg font-medium text-gray-900">
-            {formatCurrency(item.totalValue)}
+            {formatCurrency(item?.totalValue || 0)}
           </div>
           <div className="text-sm text-gray-600">
-            سعر الوحدة: {formatCurrency(item.unitPrice)}
+            سعر الوحدة: {formatCurrency(item?.unitPrice || 0)}
           </div>
         </div>
       )
@@ -344,11 +350,11 @@ export default function RestaurantInventoryPage() {
       label: 'الحالة',
       render: (item: InventoryItem) => (
         <div className="text-center">
-          <span className={`status-badge ${getStatusColor(item.status)}`}>
-            {getStatusText(item.status)}
+          <span className={`status-badge ${getStatusColor(item?.status || 'unknown')}`}>
+            {getStatusText(item?.status || 'unknown')}
           </span>
           <div className="text-xs text-gray-500 mt-1">
-            آخر تحديث: {formatDate(item.lastUpdated)}
+            آخر تحديث: {item?.lastUpdated ? formatDate(item.lastUpdated) : 'غير محدد'}
           </div>
         </div>
       )
@@ -361,8 +367,8 @@ export default function RestaurantInventoryPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push(`/restaurant/orders/create?product=${item.id}`)}
-            disabled={item.status !== 'low_stock' && item.status !== 'out_of_stock'}
+            onClick={() => router.push(`/restaurant/orders/create?product=${item?.id || ''}`)}
+            disabled={(item?.status || 'unknown') !== 'low_stock' && (item?.status || 'unknown') !== 'out_of_stock'}
           >
             📋 طلب توريد
           </Button>
@@ -386,9 +392,9 @@ export default function RestaurantInventoryPage() {
       label: 'التاريخ',
       render: (movement: InventoryMovement) => (
         <div>
-          <div className="font-medium">{formatDate(movement.date)}</div>
+          <div className="font-medium">{movement?.date ? formatDate(movement.date) : 'غير محدد'}</div>
           <div className="text-sm text-gray-500">
-            {movement.referenceNumber}
+            {movement?.referenceNumber || 'غير محدد'}
           </div>
         </div>
       )
@@ -399,9 +405,9 @@ export default function RestaurantInventoryPage() {
       render: (movement: InventoryMovement) => (
         <div className="text-center">
           <span className={`status-badge ${
-            movement.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            (movement?.type || 'unknown') === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
           }`}>
-            {movement.type === 'in' ? '⬇️ دخول' : '⬆️ خروج'}
+            {(movement?.type || 'unknown') === 'in' ? '⬇️ دخول' : '⬆️ خروج'}
           </span>
         </div>
       )
@@ -411,8 +417,8 @@ export default function RestaurantInventoryPage() {
       label: 'المنتج',
       render: (movement: InventoryMovement) => (
         <div>
-          <div className="font-medium">{movement.productName}</div>
-          <div className="text-sm text-gray-600">الكمية: {movement.quantity.toLocaleString()}</div>
+          <div className="font-medium">{movement?.productName || 'غير محدد'}</div>
+          <div className="text-sm text-gray-600">الكمية: {(movement?.quantity || 0).toLocaleString()}</div>
         </div>
       )
     },
@@ -421,8 +427,8 @@ export default function RestaurantInventoryPage() {
       label: 'السبب',
       render: (movement: InventoryMovement) => (
         <div>
-          <div className="text-sm">{movement.reason}</div>
-          {movement.notes && (
+          <div className="text-sm">{movement?.reason || 'غير محدد'}</div>
+          {movement?.notes && (
             <div className="text-xs text-gray-500 mt-1">{movement.notes}</div>
           )}
         </div>

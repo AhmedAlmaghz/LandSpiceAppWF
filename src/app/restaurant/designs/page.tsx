@@ -172,6 +172,7 @@ export default function RestaurantDesignsPage() {
       case 'revision_requested': return 'bg-yellow-100 text-yellow-800'
       case 'rejected': return 'bg-red-100 text-red-800'
       case 'submitted': return 'bg-purple-100 text-purple-800'
+      case 'unknown': return 'bg-gray-100 text-gray-600'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -184,6 +185,7 @@ export default function RestaurantDesignsPage() {
       case 'rejected': return '❌ مرفوض'
       case 'submitted': return '📤 مُرسل'
       case 'draft': return '📄 مسودة'
+      case 'unknown': return '❓ غير محدد'
       default: return status
     }
   }
@@ -194,6 +196,7 @@ export default function RestaurantDesignsPage() {
       case 'label': return '🏷️'
       case 'packaging': return '📦'
       case 'promotional': return '📢'
+      case 'unknown': return '❓'
       default: return '🖼️'
     }
   }
@@ -204,6 +207,7 @@ export default function RestaurantDesignsPage() {
       case 'label': return 'ملصق'
       case 'packaging': return 'تغليف'
       case 'promotional': return 'ترويجي'
+      case 'unknown': return 'غير محدد'
       default: return type
     }
   }
@@ -222,22 +226,22 @@ export default function RestaurantDesignsPage() {
       render: (design: Design) => (
         <div className="flex items-center space-x-3 space-x-reverse">
           <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-            {design.thumbnailUrl ? (
+            {design?.thumbnailUrl ? (
               <img 
                 src={design.thumbnailUrl} 
-                alt={design.name}
+                alt={design?.name || 'تصميم'}
                 className="w-full h-full object-cover rounded-lg"
               />
             ) : (
-              <span className="text-2xl">{getTypeIcon(design.type)}</span>
+              <span className="text-2xl">{getTypeIcon(design?.type || 'unknown')}</span>
             )}
           </div>
           <div>
-            <div className="font-medium text-gray-900">{design.name}</div>
+            <div className="font-medium text-gray-900">{design?.name || 'غير محدد'}</div>
             <div className="text-sm text-gray-500">
-              {getTypeText(design.type)} - الإصدار {design.version}
+              {getTypeText(design?.type || 'unknown')} - الإصدار {design?.version || '1'}
             </div>
-            {design.description && (
+            {design?.description && (
               <div className="text-xs text-gray-400 mt-1">
                 {design.description.substring(0, 50)}...
               </div>
@@ -251,10 +255,10 @@ export default function RestaurantDesignsPage() {
       label: 'الحالة',
       render: (design: Design) => (
         <div className="text-center">
-          <span className={`status-badge ${getStatusColor(design.status)}`}>
-            {getStatusText(design.status)}
+          <span className={`status-badge ${getStatusColor(design?.status || 'unknown')}`}>
+            {getStatusText(design?.status || 'unknown')}
           </span>
-          {design.submittedAt && (
+          {design?.submittedAt && (
             <div className="text-xs text-gray-500 mt-1">
               مُرسل: {formatDate(design.submittedAt)}
             </div>
@@ -267,10 +271,10 @@ export default function RestaurantDesignsPage() {
       label: 'المراجع',
       render: (design: Design) => (
         <div className="text-sm">
-          {design.reviewer ? (
+          {design?.reviewer ? (
             <div>
               <div className="font-medium">{design.reviewer}</div>
-              {design.reviewedAt && (
+              {design?.reviewedAt && (
                 <div className="text-gray-500">
                   {formatDate(design.reviewedAt)}
                 </div>
@@ -290,12 +294,13 @@ export default function RestaurantDesignsPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => router.push(`/restaurant/designs/${design.id}`)}
+            onClick={() => router.push(`/restaurant/designs/${design?.id || ''}`)}
+            disabled={!design?.id}
           >
             👁️ عرض
           </Button>
           
-          {design.fileUrl && (
+          {design?.fileUrl && (
             <Button
               size="sm"
               variant="outline"
@@ -305,11 +310,12 @@ export default function RestaurantDesignsPage() {
             </Button>
           )}
           
-          {['draft', 'revision_requested'].includes(design.status) && (
+          {['draft', 'revision_requested'].includes(design?.status || '') && (
             <Button
               size="sm"
               variant="primary"
-              onClick={() => router.push(`/restaurant/designs/${design.id}/edit`)}
+              onClick={() => router.push(`/restaurant/designs/${design?.id || ''}/edit`)}
+              disabled={!design?.id}
             >
               ✏️ تعديل
             </Button>

@@ -11,11 +11,25 @@ interface ChartDataPoint {
   metadata?: Record<string, any>
 }
 
+// Support for Chart.js like data structure
+interface ChartDataset {
+  label?: string
+  data: number[]
+  backgroundColor?: string | string[]
+  borderColor?: string | string[]
+  borderWidth?: number
+}
+
+interface ChartJsData {
+  labels: string[]
+  datasets: ChartDataset[]
+}
+
 interface ChartProps {
   title?: string
   description?: string
-  data: ChartDataPoint[]
-  type?: 'bar' | 'line' | 'pie' | 'area'
+  data: ChartDataPoint[] | ChartJsData | any
+  type?: 'bar' | 'line' | 'pie' | 'area' | 'doughnut'
   width?: number
   height?: number
   color?: string
@@ -50,13 +64,42 @@ const Chart: React.FC<ChartProps> = ({
     content: string
   }>({ show: false, x: 0, y: 0, content: '' })
 
-  const maxValue = Math.max(...data.map(d => d.value))
+  // Convert Chart.js format to ChartDataPoint format
+  const convertToChartDataPoints = (inputData: any): ChartDataPoint[] => {
+    // If already in correct format
+    if (Array.isArray(inputData) && inputData.length > 0 && 'label' in inputData[0] && 'value' in inputData[0]) {
+      return inputData
+    }
+    
+    // If Chart.js format
+    if (inputData && inputData.labels && inputData.datasets && Array.isArray(inputData.datasets)) {
+      const labels = inputData.labels
+      const dataset = inputData.datasets[0] // Use first dataset
+      
+      if (dataset && Array.isArray(dataset.data)) {
+        return labels.map((label: string, index: number) => ({
+          label,
+          value: dataset.data[index] || 0,
+          color: Array.isArray(dataset.backgroundColor) 
+            ? dataset.backgroundColor[index] 
+            : dataset.backgroundColor || undefined
+        }))
+      }
+    }
+    
+    // Fallback to empty array
+    return []
+  }
+
+  // Safety check: ensure data is an array and has valid data
+  const safeData = convertToChartDataPoints(data)
+  const maxValue = safeData.length > 0 ? Math.max(...safeData.map(d => d.value || 0)) : 1
   const padding = 40
   const chartWidth = width - 2 * padding
   const chartHeight = height - 2 * padding
 
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current || safeData.length === 0) return
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
@@ -78,15 +121,17 @@ const Chart: React.FC<ChartProps> = ({
       drawBarChart(ctx)
     } else if (type === 'line') {
       drawLineChart(ctx)
-    } else if (type === 'pie') {
+    } else if (type === 'pie' || type === 'doughnut') {
       drawPieChart(ctx)
     } else if (type === 'area') {
       drawAreaChart(ctx)
     }
-  }, [data, type, width, height, maxValue, animate])
+  }, [safeData, type, width, height, maxValue, animate])
 
   const drawBarChart = (ctx: CanvasRenderingContext2D) => {
-    const barWidth = chartWidth / data.length
+    if (safeData.length === 0) return
+    
+    const barWidth = chartWidth / safeData.length
     const barSpacing = barWidth * 0.2
     const actualBarWidth = barWidth - barSpacing
 
@@ -111,7 +156,7 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     // Draw bars
-    data.forEach((dataPoint, index) => {
+    safeData.forEach((dataPoint, index) => {
       const barHeight = (dataPoint.value / maxValue) * chartHeight
       const x = padding + index * barWidth + barSpacing / 2
       const y = height - padding - barHeight
@@ -147,9 +192,9 @@ const Chart: React.FC<ChartProps> = ({
   }
 
   const drawLineChart = (ctx: CanvasRenderingContext2D) => {
-    if (data.length < 2) return
+    if (safeData.length < 2) return
 
-    const pointSpacing = chartWidth / (data.length - 1)
+    const pointSpacing = chartWidth / (safeData.length - 1)
 
     // Draw grid
     if (showGrid) {
@@ -170,7 +215,7 @@ const Chart: React.FC<ChartProps> = ({
     ctx.lineWidth = 3
     ctx.beginPath()
 
-    data.forEach((dataPoint, index) => {
+    safeData.forEach((dataPoint, index) => {
       const x = padding + index * pointSpacing
       const y = height - padding - (dataPoint.value / maxValue) * chartHeight
 
@@ -184,7 +229,7 @@ const Chart: React.FC<ChartProps> = ({
     ctx.stroke()
 
     // Draw points
-    data.forEach((dataPoint, index) => {
+    safeData.forEach((dataPoint, index) => {
       const x = padding + index * pointSpacing
       const y = height - padding - (dataPoint.value / maxValue) * chartHeight
 
@@ -201,11 +246,14 @@ const Chart: React.FC<ChartProps> = ({
   }
 
   const drawPieChart = (ctx: CanvasRenderingContext2D) => {
+    if (safeData.length === 0) return
+    
     const centerX = width / 2
     const centerY = height / 2
     const radius = Math.min(chartWidth, chartHeight) / 2 - 20
+    const innerRadius = type === 'doughnut' ? radius * 0.4 : 0
 
-    const total = data.reduce((sum, d) => sum + d.value, 0)
+    const total = safeData.reduce((sum, d) => sum + d.value, 0)
     let currentAngle = -Math.PI / 2
 
     const colors = [
@@ -213,21 +261,31 @@ const Chart: React.FC<ChartProps> = ({
       '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'
     ]
 
-    data.forEach((dataPoint, index) => {
+    safeData.forEach((dataPoint, index) => {
       const sliceAngle = (dataPoint.value / total) * 2 * Math.PI
       const sliceColor = dataPoint.color || colors[index % colors.length]
 
       ctx.fillStyle = sliceColor
       ctx.beginPath()
-      ctx.moveTo(centerX, centerY)
-      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle)
+      
+      if (type === 'doughnut') {
+        // Draw doughnut slice
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle)
+        ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true)
+      } else {
+        // Draw pie slice
+        ctx.moveTo(centerX, centerY)
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle)
+      }
+      
       ctx.closePath()
       ctx.fill()
 
       // Draw percentage label
       const labelAngle = currentAngle + sliceAngle / 2
-      const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7)
-      const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7)
+      const labelRadius = type === 'doughnut' ? (radius + innerRadius) / 2 : radius * 0.7
+      const labelX = centerX + Math.cos(labelAngle) * labelRadius
+      const labelY = centerY + Math.sin(labelAngle) * labelRadius
       
       const percentage = Math.round((dataPoint.value / total) * 100)
       ctx.fillStyle = '#ffffff'
@@ -240,9 +298,9 @@ const Chart: React.FC<ChartProps> = ({
   }
 
   const drawAreaChart = (ctx: CanvasRenderingContext2D) => {
-    if (data.length < 2) return
+    if (safeData.length < 2) return
 
-    const pointSpacing = chartWidth / (data.length - 1)
+    const pointSpacing = chartWidth / (safeData.length - 1)
 
     // Create gradient
     const gradient = ctx.createLinearGradient(0, padding, 0, height - padding)
@@ -254,7 +312,7 @@ const Chart: React.FC<ChartProps> = ({
     ctx.beginPath()
     ctx.moveTo(padding, height - padding)
 
-    data.forEach((dataPoint, index) => {
+    safeData.forEach((dataPoint, index) => {
       const x = padding + index * pointSpacing
       const y = height - padding - (dataPoint.value / maxValue) * chartHeight
       ctx.lineTo(x, y)
@@ -279,11 +337,11 @@ const Chart: React.FC<ChartProps> = ({
     const y = event.clientY - rect.top
 
     if (type === 'bar') {
-      const barWidth = chartWidth / data.length
+      const barWidth = chartWidth / safeData.length
       const clickedIndex = Math.floor((x - padding) / barWidth)
       
-      if (clickedIndex >= 0 && clickedIndex < data.length) {
-        onDataPointClick(data[clickedIndex], clickedIndex)
+      if (clickedIndex >= 0 && clickedIndex < safeData.length) {
+        onDataPointClick(safeData[clickedIndex], clickedIndex)
       }
     }
   }
@@ -300,14 +358,14 @@ const Chart: React.FC<ChartProps> = ({
 
     // Simple tooltip logic for bar charts
     if (type === 'bar') {
-      const barWidth = chartWidth / data.length
+      const barWidth = chartWidth / safeData.length
       const hoveredIndex = Math.floor((x - padding) / barWidth)
       
-      if (hoveredIndex >= 0 && hoveredIndex < data.length && 
+      if (hoveredIndex >= 0 && hoveredIndex < safeData.length && 
           x >= padding && x <= width - padding && 
           y >= padding && y <= height - padding) {
         
-        const dataPoint = data[hoveredIndex]
+        const dataPoint = safeData[hoveredIndex]
         setTooltip({
           show: true,
           x: event.clientX,
@@ -330,33 +388,45 @@ const Chart: React.FC<ChartProps> = ({
       )}
       
       <CardContent>
-        <div className="relative">
-          <canvas
-            ref={canvasRef}
-            className="border border-gray-200 rounded cursor-pointer"
-            onClick={handleCanvasClick}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseLeave={() => setTooltip(prev => ({ ...prev, show: false }))}
-          />
-          
-          {/* Tooltip */}
-          {tooltip.show && (
-            <div
-              className="absolute bg-gray-800 text-white text-sm rounded px-2 py-1 pointer-events-none z-10"
-              style={{
-                left: tooltip.x - 300, // Adjust for canvas position
-                top: tooltip.y - 100
-              }}
-            >
-              {tooltip.content}
+        {safeData.length === 0 ? (
+          <div 
+            className="border border-gray-200 rounded flex items-center justify-center text-gray-500"
+            style={{ width: width, height: height }}
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-2">📊</div>
+              <p>لا توجد بيانات للعرض</p>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              className="border border-gray-200 rounded cursor-pointer"
+              onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseLeave={() => setTooltip(prev => ({ ...prev, show: false }))}
+            />
+          
+            {/* Tooltip */}
+            {tooltip.show && (
+              <div
+                className="absolute bg-gray-800 text-white text-sm rounded px-2 py-1 pointer-events-none z-10"
+                style={{
+                  left: tooltip.x - 300, // Adjust for canvas position
+                  top: tooltip.y - 100
+                }}
+              >
+                {tooltip.content}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Legend */}
-        {showLegend && data.length > 1 && (
+        {showLegend && safeData.length > 1 && (
           <div className="mt-4 flex flex-wrap justify-center gap-4">
-            {data.map((dataPoint, index) => {
+            {safeData.map((dataPoint, index) => {
               const colors = [
                 '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
                 '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'

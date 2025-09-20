@@ -383,12 +383,12 @@ export default function RestaurantOrdersPage() {
       label: 'الطلب',
       render: (order: Order) => (
         <div className="space-y-1">
-          <div className="font-medium text-gray-900">{order.orderNumber}</div>
+          <div className="font-medium text-gray-900">{order?.orderNumber || 'غير محدد'}</div>
           <div className="text-sm text-gray-500">
-            {formatDate(order.createdAt)}
+            {order?.createdAt ? formatDate(order.createdAt) : 'غير محدد'}
           </div>
-          <span className={`status-badge text-xs ${getPriorityColor(order.priority)}`}>
-            {getPriorityText(order.priority)}
+          <span className={`status-badge text-xs ${getPriorityColor(order?.priority || 'normal')}`}>
+            {getPriorityText(order?.priority || 'normal')}
           </span>
         </div>
       )
@@ -399,16 +399,16 @@ export default function RestaurantOrdersPage() {
       render: (order: Order) => (
         <div className="space-y-1">
           <div className="font-medium text-gray-900">
-            {order.totalItems} منتج ({order.totalQuantity.toLocaleString()} وحدة)
+            {(order?.totalItems || 0)} منتج ({(order?.totalQuantity || 0).toLocaleString()} وحدة)
           </div>
           <div className="text-sm text-gray-600">
-            {order.items.slice(0, 2).map((item, index) => (
+            {(order?.items || []).slice(0, 2).map((item, index) => (
               <div key={index}>
-                • {item.productName} ({item.quantity.toLocaleString()})
+                • {item?.productName || 'غير محدد'} ({(item?.quantity || 0).toLocaleString()})
               </div>
             ))}
-            {order.items.length > 2 && (
-              <div className="text-blue-600">+ {order.items.length - 2} منتج آخر</div>
+            {(order?.items?.length || 0) > 2 && (
+              <div className="text-blue-600">+ {(order?.items?.length || 0) - 2} منتج آخر</div>
             )}
           </div>
         </div>
@@ -420,10 +420,10 @@ export default function RestaurantOrdersPage() {
       render: (order: Order) => (
         <div className="text-center">
           <div className="text-lg font-medium text-gray-900">
-            {formatCurrency(order.totalAmount)}
+            {formatCurrency(order?.totalAmount || 0)}
           </div>
           <div className="text-sm text-gray-500">
-            متوسط: {formatCurrency(order.totalAmount / order.totalQuantity)}
+            متوسط: {formatCurrency((order?.totalAmount || 0) / (order?.totalQuantity || 1))}
           </div>
         </div>
       )
@@ -434,16 +434,16 @@ export default function RestaurantOrdersPage() {
       render: (order: Order) => (
         <div className="space-y-1">
           <div className="font-medium text-gray-900">
-            {formatDate(order.deliveryDate)}
+            {order?.deliveryDate ? formatDate(order.deliveryDate) : 'غير محدد'}
           </div>
           <div className="text-sm text-gray-600">
-            {getDeliveryStatus(order)}
+            {getDeliveryStatus(order || {})}
           </div>
-          {order.trackingInfo && (
+          {order?.trackingInfo && (
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${order.trackingInfo.deliveryProgress}%` }}
+                style={{ width: `${order.trackingInfo.deliveryProgress || 0}%` }}
               ></div>
             </div>
           )}
@@ -455,11 +455,11 @@ export default function RestaurantOrdersPage() {
       label: 'الحالة',
       render: (order: Order) => (
         <div className="text-center">
-          <span className={`status-badge ${getStatusColor(order.status)}`}>
-            {getStatusText(order.status)}
+          <span className={`status-badge ${getStatusColor(order?.status || 'unknown')}`}>
+            {getStatusText(order?.status || 'unknown')}
           </span>
           <div className="text-xs text-gray-500 mt-1">
-            آخر تحديث: {formatDate(order.updatedAt)}
+            آخر تحديث: {order?.updatedAt ? formatDate(order.updatedAt) : 'غير محدد'}
           </div>
         </div>
       )
@@ -472,26 +472,29 @@ export default function RestaurantOrdersPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => router.push(`/restaurant/orders/${order.id}`)}
+            onClick={() => router.push(`/restaurant/orders/${order?.id || ''}`)}
+            disabled={!order?.id}
           >
             👁️ عرض
           </Button>
           
-          {order.trackingInfo && (
+          {order?.trackingInfo && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => router.push(`/restaurant/orders/${order.id}/track`)}
+              onClick={() => router.push(`/restaurant/orders/${order?.id || ''}/track`)}
+              disabled={!order?.id}
             >
               📍 تتبع
             </Button>
           )}
           
-          {['pending', 'draft'].includes(order.status) && (
+          {['pending', 'draft'].includes(order?.status || '') && (
             <Button
               size="sm"
               variant="danger"
-              onClick={() => cancelOrder(order.id)}
+              onClick={() => cancelOrder(order?.id || '')}
+              disabled={!order?.id}
             >
               ❌ إلغاء
             </Button>
@@ -605,15 +608,22 @@ export default function RestaurantOrdersPage() {
             <CardContent className="py-4">
               <AdvancedSearch
                 onSearch={handleSearch}
+                onReset={() => setFilters({
+                  search: '',
+                  status: '',
+                  priority: '',
+                  dateFrom: '',
+                  dateTo: ''
+                })}
                 filters={[
                   {
-                    key: 'search',
+                    id: 'search',
                     type: 'text',
                     placeholder: 'البحث في الطلبات...',
                     label: 'البحث العام'
                   },
                   {
-                    key: 'status',
+                    id: 'status',
                     type: 'select',
                     label: 'الحالة',
                     options: [
@@ -627,7 +637,7 @@ export default function RestaurantOrdersPage() {
                     ]
                   },
                   {
-                    key: 'priority',
+                    id: 'priority',
                     type: 'select',
                     label: 'الأولوية',
                     options: [
@@ -638,12 +648,12 @@ export default function RestaurantOrdersPage() {
                     ]
                   },
                   {
-                    key: 'dateFrom',
+                    id: 'dateFrom',
                     type: 'date',
                     label: 'من تاريخ'
                   },
                   {
-                    key: 'dateTo',
+                    id: 'dateTo',
                     type: 'date',
                     label: 'إلى تاريخ'
                   }
